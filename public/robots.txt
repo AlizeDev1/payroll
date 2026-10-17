@@ -1,0 +1,9 @@
+# Alize Payroll & Workforce Management - Robots.txt
+# White Hat SEO Crawler Directives
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /private/
+
+# Sitemap Location
+Sitemap: https://payroll.alize.com/sitemap.xml

@@ -1,0 +1,6 @@
+{
+  "name": "Alize Payroll",
+  "description": "Smart Payroll & Workforce Management Software for Indian businesses by Alize Software Services LLP.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
