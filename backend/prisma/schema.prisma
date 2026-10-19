@@ -1,0 +1,416 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  password   String
+  name       String
+  role       String   @default("Company Admin")
+  department String   @default("Administration")
+  avatar     String?
+  status     String   @default("Active")
+  lastLogin  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Department {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  code          String   @unique
+  headName      String   @default("Unassigned")
+  headId        String?
+  budgetMonthly Float    @default(0)
+  status        String   @default("Active")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Designation {
+  id             String   @id @default(cuid())
+  title          String
+  departmentId   String?
+  departmentName String
+  level          String   @default("L1")
+  minSalary      Float    @default(0)
+  maxSalary      Float    @default(0)
+  status         String   @default("Active")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Employee {
+  id                  String   @id @default(cuid())
+  employeeId          String   @unique
+  firstName           String
+  lastName            String
+  email               String   @unique
+  phone               String
+  avatar              String?
+  departmentId        String?
+  departmentName      String
+  designationId       String?
+  designationTitle    String
+  reportingManagerId  String?
+  reportingManagerName String?
+  joiningDate         String
+  employmentType      String   @default("Full-Time")
+  status              String   @default("Active")
+  workLocation        String   @default("Bangalore HQ")
+  salary              Float
+  ctcAnnual           Float
+  dateOfBirth         String?
+  gender              String?
+  address             String?
+  city                String?
+  state               String?
+  pincode             String?
+  emergencyContact    String?
+  bankName            String
+  accountNumber       String
+  ifscCode            String
+  panNumber           String
+  aadhaarNumber       String
+  uanNumber           String
+  esiNumber           String?
+  taxRegime           String   @default("New Regime (115BAC)")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Attendance {
+  id          String   @id @default(cuid())
+  employeeId  String
+  date        String
+  dayNumber   Int
+  status      String   // P, A, L, H, WFH, WO, HD
+  checkIn     String?
+  checkOut    String?
+  hoursWorked Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([employeeId, date])
+}
+
+model LeaveRequest {
+  id           String   @id @default(cuid())
+  employeeId   String
+  employeeName String
+  department   String
+  avatar       String?
+  leaveType    String
+  fromDate     String
+  toDate       String
+  daysCount    Int
+  reason       String
+  status       String   @default("Pending") // Pending, Approved, Rejected
+  appliedDate  String
+  reviewedBy   String?
+  reviewedDate String?
+  comments     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model SalaryStructure {
+  id                String   @id @default(cuid())
+  name              String
+  description       String
+  basicPct          Float    @default(50)
+  hraPct            Float    @default(20)
+  conveyance        Float    @default(1600)
+  specialAllowance  Float    @default(0)
+  pfApplicable      Boolean  @default(true)
+  esiApplicable     Boolean  @default(true)
+  ptApplicable      Boolean  @default(true)
+  lwfApplicable     Boolean  @default(false)
+  lwfState          String?
+  lwfEmployeeAmount Float?
+  status            String   @default("Active")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PayrollRun {
+  id               String   @id @default(cuid())
+  month            String
+  year             Int
+  monthIndex       Int
+  status           String   @default("Draft") // Draft, Processing, Pending Approval, Approved, Paid
+  totalEmployees   Int      @default(0)
+  grossAmount      Float    @default(0)
+  totalEarnings    Float    @default(0)
+  totalDeductions  Float    @default(0)
+  netPayable       Float    @default(0)
+  processedDate    String?
+  approvedBy       String?
+  paymentReference String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model PayrollItem {
+  id               String   @id @default(cuid())
+  payrollRunId     String?
+  employeeId       String
+  employeeName     String
+  department       String
+  designation      String
+  bankAccount      String
+  grossSalary      Float
+  basic            Float
+  hra              Float
+  specialAllowance Float    @default(0)
+  conveyance       Float    @default(0)
+  bonus            Float    @default(0)
+  incentives       Float    @default(0)
+  overtime         Float    @default(0)
+  overtimeHours    Float?
+  totalEarnings    Float
+  pfDeduction      Float    @default(0)
+  esiDeduction     Float    @default(0)
+  professionalTax  Float    @default(0)
+  lwfDeduction     Float    @default(0)
+  tdsDeduction     Float    @default(0)
+  lopDays          Float    @default(0)
+  lopDeduction     Float    @default(0)
+  loanRecovery     Float    @default(0)
+  totalDeductions  Float    @default(0)
+  netSalary        Float
+  status           String   @default("Pending") // Paid, Approved, Pending, Hold
+  paymentDate      String?
+  paymentMode      String   @default("Bank Transfer (NEFT/RTGS)")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Payslip {
+  id               String   @id @default(cuid())
+  payrollId        String
+  employeeId       String
+  employeeName     String
+  department       String
+  designation      String
+  joiningDate      String
+  bankName         String
+  accountNumber    String
+  ifscCode         String
+  panNumber        String
+  uanNumber        String
+  esiNumber        String?
+  month            String
+  year             Int
+  workedDays       Float
+  lopDays          Float
+  totalDays        Int
+  basic            Float
+  hra              Float
+  conveyance       Float
+  specialAllowance Float
+  bonus            Float    @default(0)
+  incentives       Float    @default(0)
+  overtime         Float    @default(0)
+  totalEarnings    Float
+  pf               Float
+  esi              Float
+  pt               Float
+  lwf              Float?   @default(0)
+  tds              Float
+  lop              Float
+  loanDeduction    Float    @default(0)
+  totalDeductions  Float
+  netSalary        Float
+  netSalaryInWords String
+  generatedDate    String
+  status           String   @default("Generated") // Generated, Sent, Downloaded
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Reimbursement {
+  id                String   @id @default(cuid())
+  claimId           String   @unique
+  employeeId        String
+  employeeName      String
+  department        String
+  category          String
+  amount            Float
+  billDate          String
+  submittedDate     String
+  description       String
+  receiptAttachment String?
+  status            String   @default("Pending") // Pending, Approved, Rejected, Paid
+  approvedBy        String?
+  approvalRemarks   String?
+  paymentDate       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Loan {
+  id              String   @id @default(cuid())
+  employeeId      String
+  employeeName    String
+  department      String
+  loanType        String
+  principalAmount Float
+  interestRate    Float
+  tenureMonths    Int
+  monthlyEmi      Float
+  disbursedDate   String
+  remainingAmount Float
+  status          String   @default("Active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Contractor {
+  id               String   @id @default(cuid())
+  contractorId     String   @unique
+  name             String
+  panNumber        String
+  gstNumber        String?
+  serviceType      String
+  tdsSection       String   // 194C, 194J
+  tdsRate          Float
+  status           String   @default("Active")
+  totalBilled      Float    @default(0)
+  totalTdsDeducted Float    @default(0)
+  bankName         String
+  accountNumber    String
+  ifscCode         String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model ContractorInvoice {
+  id               String   @id @default(cuid())
+  invoiceNumber    String   @unique
+  contractorId     String
+  contractorName   String
+  panNumber        String
+  serviceType      String
+  invoiceDate      String
+  dueDate          String
+  grossAmount      Float
+  tdsSection       String
+  tdsRate          Float
+  tdsAmount        Float
+  netPayable       Float
+  status           String   @default("Approved") // Pending, Approved, Paid
+  paymentDate      String?
+  paymentReference String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model TaxDeclaration {
+  id                String   @id @default(cuid())
+  employeeId        String
+  employeeName      String
+  department        String
+  panNumber         String
+  financialYear     String   @default("2026-2027")
+  regime            String   // New Regime (115BAC), Old Regime
+  section80C        Float    @default(0)
+  section80D        Float    @default(0)
+  hraExemption      Float    @default(0)
+  homeLoanInterest  Float    @default(0)
+  nps80CCD          Float    @default(0)
+  otherDeductions   Float    @default(0)
+  totalDeclared     Float    @default(0)
+  approvedAmount    Float    @default(0)
+  proofStatus       String   @default("Pending")
+  status            String   @default("Pending")
+  submittedDate     String
+  reviewedBy        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  employeeId  String?
+  title       String
+  category    String
+  fileName    String
+  fileSize    String
+  uploadDate  String
+  status      String   @default("Active")
+  url         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model StatutoryCompliance {
+  id                   String   @id @default(cuid())
+  category             String
+  status               String   @default("Compliant")
+  registeredEmployees  Int      @default(0)
+  employeeContribution Float    @default(0)
+  employerContribution Float    @default(0)
+  totalRemittance      Float    @default(0)
+  dueDate              String
+  lastChallanNo        String
+  lastFilingDate       String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model FullAndFinalSettlement {
+  id                   String   @id @default(cuid())
+  employeeId           String
+  employeeName         String
+  department           String
+  designation          String
+  resignationDate      String
+  lastWorkingDay       String
+  noticePeriodDays     Int      @default(30)
+  shortfallDays        Int      @default(0)
+  unpaidSalary         Float    @default(0)
+  leaveEncashmentDays  Float    @default(0)
+  leaveEncashmentAmount Float   @default(0)
+  gratuityAmount       Float    @default(0)
+  bonusIncentive       Float    @default(0)
+  totalPayableEarnings Float    @default(0)
+  noticeRecovery       Float    @default(0)
+  loanBalanceRecovery  Float    @default(0)
+  taxDeduction         Float    @default(0)
+  otherDeductions      Float    @default(0)
+  netSettlementAmount  Float    @default(0)
+  status               String   @default("Pending")
+  settledDate          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model SystemNotification {
+  id         String   @id @default(cuid())
+  type       String
+  title      String
+  message    String
+  timestamp  String
+  read       Boolean  @default(false)
+  actionUrl  String?
+  priority   String   @default("normal")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model RolePermission {
+  id          String   @id @default(cuid())
+  role        String   @unique
+  description String
+  permissions String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+

@@ -8,6 +8,10 @@ dist/
 build/
 coverage/
 
+# Database files
+*.db
+*.db-journal
+
 # Environment Variables & Private Credentials
 .env
 .env.local

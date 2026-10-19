@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: alize_payroll_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: alize_user
+      POSTGRES_PASSWORD: alize_secure_pass_2026
+      POSTGRES_DB: alize_payroll
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alize_user -d alize_payroll"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - alize_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: alize_payroll_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+      - PORT=8000
+      - JWT_SECRET=alize-production-enterprise-payroll-secret-key-2026
+      - DATABASE_URL=postgresql://alize_user:alize_secure_pass_2026@postgres:5432/alize_payroll?schema=public
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - alize_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: alize_payroll_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - alize_network
+
+networks:
+  alize_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
