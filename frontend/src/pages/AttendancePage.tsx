@@ -25,6 +25,7 @@ import { attendanceService } from '../services/attendanceService';
 import { EmployeeMonthlyAttendance, AttendanceStatus, EmployeeOvertimeRecord } from '../types';
 import { MOCK_OVERTIME_RECORDS } from '../data/mockData';
 import { useToast } from '../context/ToastContext';
+import { exportToCsv } from '../utils/exportUtils';
 
 export const AttendancePage: React.FC = () => {
   const { success } = useToast();
@@ -103,9 +104,15 @@ export const AttendancePage: React.FC = () => {
               variant="secondary"
               size="sm"
               onClick={() => {
-                const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1';
-                window.open(`${apiBase}/reports/download/attendance_muster_roll_2026_10.csv`, '_blank');
-                success('Export Started', 'Downloading Form 25 Attendance Muster Roll (.csv)');
+                const headers = ['Employee ID', 'Employee Name', 'Department', ...daysInMonth.map((d) => `Day ${d}`)];
+                const rows = attendanceList.map((emp) => [
+                  emp.employeeId,
+                  emp.employeeName,
+                  emp.department,
+                  ...daysInMonth.map((d) => emp.days[d] || 'P'),
+                ]);
+                exportToCsv(`attendance_muster_roll_oct_2026.csv`, headers, rows);
+                success('Export Complete', 'Downloaded Form 25 Attendance Muster Roll (.csv)');
               }}
               leftIcon={<Download className="w-3.5 h-3.5" />}
             >

@@ -7,14 +7,17 @@ import {
   Check,
   FileCheck2,
   Search,
+  Plus,
 } from 'lucide-react';
 import { PageHeader } from '../components/common/PageHeader';
 import { StatCard } from '../components/common/StatCard';
+import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { EmptyState } from '../components/common/EmptyState';
 import { complianceService } from '../services/complianceService';
 import { FullAndFinalSettlement } from '../types';
+import { MOCK_EMPLOYEES } from '../data/mockData';
 import { useToast } from '../context/ToastContext';
 
 export const FullAndFinalPage: React.FC = () => {
@@ -23,6 +26,11 @@ export const FullAndFinalPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSettlement, setSelectedSettlement] = useState<FullAndFinalSettlement | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newExitEmpId, setNewExitEmpId] = useState(MOCK_EMPLOYEES[0]?.id || '');
+  const [newLastDay, setNewLastDay] = useState('2026-11-15');
+  const [newLeaveDays, setNewLeaveDays] = useState(12);
+  const [newGratuity, setNewGratuity] = useState(125000);
 
   useEffect(() => {
     complianceService.getFullAndFinalSettlements().then(setSettlements);
@@ -53,6 +61,16 @@ export const FullAndFinalPage: React.FC = () => {
         title="Full & Final (F&F) Settlements"
         subtitle="Compute exit compensation, leave encashment days, gratuity eligibility, and notice shortfall deductions."
         breadcrumb={['Overview', 'Compliance', 'Full & Final']}
+        actions={
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setIsCreateModalOpen(true)}
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
+          >
+            Initiate Exit Clearance
+          </Button>
+        }
       />
 
       {/* KPI Cards */}
@@ -277,6 +295,113 @@ export const FullAndFinalPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Initiate Exit Clearance Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Initiate Full & Final (F&F) Settlement"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsCreateModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                const targetEmp = MOCK_EMPLOYEES.find((e) => e.id === newExitEmpId) || MOCK_EMPLOYEES[0];
+                const encashment = Math.round((targetEmp.salary / 30) * newLeaveDays);
+                const net = encashment + newGratuity - 5000;
+                const newSettlement: FullAndFinalSettlement = {
+                  id: `ff-${Date.now()}`,
+                  employeeId: targetEmp.employeeId,
+                  employeeName: `${targetEmp.firstName} ${targetEmp.lastName}`,
+                  department: targetEmp.departmentName,
+                  resignationDate: new Date().toISOString().split('T')[0],
+                  lastWorkingDay: newLastDay,
+                  noticePeriodDays: 90,
+                  unavailedLeavesDays: newLeaveDays,
+                  leaveEncashmentAmount: encashment,
+                  gratuityAmount: newGratuity,
+                  bonusIncentive: 25000,
+                  noticePayShortfall: 0,
+                  loanBalanceRecovery: 0,
+                  taxDeduction: 5000,
+                  otherDeductions: 0,
+                  netSettlementAmount: net,
+                  status: 'Under Review',
+                };
+                setSettlements((prev) => [newSettlement, ...prev]);
+                success('Exit Clearance Initiated', `F&F statement generated for ${newSettlement.employeeName}.`);
+                setIsCreateModalOpen(false);
+              }}
+            >
+              Generate F&F Statement
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 text-xs">
+          <div>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Select Exiting Employee
+            </label>
+            <select
+              value={newExitEmpId}
+              onChange={(e) => setNewExitEmpId(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
+            >
+              {MOCK_EMPLOYEES.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.firstName} {emp.lastName} ({emp.employeeId}) - {emp.departmentName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Last Working Day
+              </label>
+              <input
+                type="date"
+                value={newLastDay}
+                onChange={(e) => setNewLastDay(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Unavailed Leave Days
+              </label>
+              <input
+                type="number"
+                value={newLeaveDays}
+                onChange={(e) => setNewLeaveDays(Number(e.target.value))}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Gratuity Provision (₹) (Sec 4(2) Gratuity Act)
+            </label>
+            <input
+              type="number"
+              value={newGratuity}
+              onChange={(e) => setNewGratuity(Number(e.target.value))}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
+            />
+            <span className="text-[10px] text-slate-400 mt-1 block">
+              15 days salary for each completed year of service (tenure &gt; 5 yrs).
+            </span>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

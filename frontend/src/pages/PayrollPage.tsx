@@ -29,6 +29,7 @@ import { GlAccountingModal } from '../components/modals/GlAccountingModal';
 import { RetroactiveArrearsModal } from '../components/modals/RetroactiveArrearsModal';
 import { useToast } from '../context/ToastContext';
 import { usePageSeo } from '../hooks/usePageSeo';
+import { exportToCsv } from '../utils/exportUtils';
 
 export const PayrollPage: React.FC = () => {
   const navigate = useNavigate();
@@ -153,9 +154,32 @@ export const PayrollPage: React.FC = () => {
             variant="secondary"
             size="sm"
             onClick={() => {
-              const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1';
-              window.open(`${apiBase}/reports/download/payroll_register_master_${selectedMonth}_${selectedYear}.csv`, '_blank');
-              success('Export Started', `Downloading ${selectedMonth} ${selectedYear} Payroll Register (.csv)`);
+              const headers = [
+                'Employee ID',
+                'Employee Name',
+                'Department',
+                'Basic (₹)',
+                'HRA (₹)',
+                'Gross Pay (₹)',
+                'EPF Deductions (₹)',
+                'Income Tax TDS (₹)',
+                'Net Disbursal (₹)',
+                'Status',
+              ];
+              const rows = filteredItems.map((it) => [
+                it.employeeId,
+                it.employeeName,
+                it.department,
+                it.basic,
+                it.hra,
+                it.gross,
+                it.deductions,
+                it.tax,
+                it.net,
+                it.status,
+              ]);
+              exportToCsv(`payroll_register_master_${selectedMonth}_${selectedYear}.csv`, headers, rows);
+              success('Export Complete', `Downloaded ${selectedMonth} ${selectedYear} Payroll Register (.csv)`);
             }}
             leftIcon={<Download className="w-3.5 h-3.5" />}
           >

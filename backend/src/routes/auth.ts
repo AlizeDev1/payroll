@@ -91,10 +91,11 @@ authRouter.post('/login', async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // If password provided, compare; for demo fallback allow instant admin
+    // Password verification with bcrypt (demo bypass restricted to non-production only)
     if (password && user.password) {
       const match = await bcrypt.compare(password, user.password).catch(() => false);
-      if (!match && password !== 'admin123') {
+      const isDevFallback = process.env.NODE_ENV !== 'production' && password === 'admin123';
+      if (!match && !isDevFallback) {
         res.status(401).json({ success: false, message: 'Invalid password' });
         return;
       }

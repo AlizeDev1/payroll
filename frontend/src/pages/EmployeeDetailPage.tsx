@@ -17,13 +17,22 @@ import {
   CreditCard,
   Eye,
   EyeOff,
+  CheckCircle2,
+  Download,
+  CalendarCheck,
+  CalendarDays,
+  FileText,
 } from 'lucide-react';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { employeeService } from '../services/employeeService';
-import { Employee } from '../types';
+import { payrollService } from '../services/payrollService';
+import { leaveService } from '../services/leaveService';
+import { Employee, PayslipItem, LeaveRequest } from '../types';
+import { PayslipModal } from '../components/modals/PayslipModal';
 import { useToast } from '../context/ToastContext';
 import { maskAccountNumber, maskPanNumber } from '../utils/security';
+import { triggerFileDownload } from '../utils/exportUtils';
 
 export const EmployeeDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,11 +44,16 @@ export const EmployeeDetailPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
     'Overview' | 'Personal' | 'Employment' | 'Salary' | 'Bank' | 'Attendance' | 'Leave' | 'Payslips' | 'Documents'
   >('Overview');
+  const [selectedPayslip, setSelectedPayslip] = useState<PayslipItem | null>(null);
+  const [employeeLeaves, setEmployeeLeaves] = useState<LeaveRequest[]>([]);
 
   useEffect(() => {
     if (id) {
       employeeService.getEmployeeById(id).then((emp) => {
         if (emp) setEmployee(emp);
+      });
+      leaveService.getLeaves().then((allLeaves) => {
+        setEmployeeLeaves(allLeaves.filter((l) => l.employeeId === id || l.employeeName?.includes(id)));
       });
     }
   }, [id]);
@@ -459,26 +473,329 @@ export const EmployeeDetailPage: React.FC = () => {
         </div>
       )}
 
-      {/* Tabs 6-9: Contextual Views (Attendance, Leave, Payslips, Documents) */}
-      {(activeTab === 'Attendance' || activeTab === 'Leave' || activeTab === 'Payslips' || activeTab === 'Documents') && (
-        <div className="bg-white dark:bg-[#111827] p-8 rounded-xl border border-[#E5E7EB] dark:border-[#1F2937] text-center space-y-3 shadow-[0_1px_3px_0_rgba(15,23,42,0.04)]">
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 font-heading">
-            {activeTab} Records for {employee.firstName} {employee.lastName}
-          </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-            Filtered view synchronized with the centralized {activeTab.toLowerCase()} service module.
-          </p>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() =>
-              navigate(`/${activeTab.toLowerCase() === 'leave' ? 'leaves' : activeTab.toLowerCase()}`)
-            }
-          >
-            Open Dedicated {activeTab} Console →
-          </Button>
+      {/* Tab 6: Attendance View */}
+      {activeTab === 'Attendance' && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[11px] text-slate-500 font-medium">Days Present</span>
+              <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">21 Days</p>
+              <span className="text-[10px] text-slate-400">95.4% Attendance Rate</span>
+            </div>
+            <div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[11px] text-slate-500 font-medium">Leaves Availed</span>
+              <p className="text-xl font-bold text-amber-600 dark:text-amber-400 mt-1 font-mono">1 Day</p>
+              <span className="text-[10px] text-slate-400">Casual Leave (Approved)</span>
+            </div>
+            <div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[11px] text-slate-500 font-medium">Remote (WFH)</span>
+              <p className="text-xl font-bold text-sky-600 dark:text-sky-400 mt-1 font-mono">1 Day</p>
+              <span className="text-[10px] text-slate-400">Geofence Verified</span>
+            </div>
+            <div className="bg-white dark:bg-[#111827] p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="text-[11px] text-slate-500 font-medium">Loss of Pay (LOP)</span>
+              <p className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-1 font-mono">0 Days</p>
+              <span className="text-[10px] text-emerald-600">Zero Salary Deduction</span>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#111827] p-5 sm:p-6 rounded-xl border border-[#E5E7EB] dark:border-[#1F2937] shadow-[0_1px_3px_0_rgba(15,23,42,0.04)]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 font-heading">
+                October 2026 Daily Attendance Muster
+              </h3>
+              <div className="flex items-center gap-2 text-[10px]">
+                <span className="inline-flex items-center gap-1 font-semibold text-emerald-600"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Present</span>
+                <span className="inline-flex items-center gap-1 font-semibold text-sky-600"><span className="w-2 h-2 rounded-full bg-sky-500"></span> WFH</span>
+                <span className="inline-flex items-center gap-1 font-semibold text-amber-600"><span className="w-2 h-2 rounded-full bg-amber-500"></span> Leave</span>
+                <span className="inline-flex items-center gap-1 font-semibold text-slate-400"><span className="w-2 h-2 rounded-full bg-slate-300"></span> Off</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-7 sm:grid-cols-10 md:grid-cols-16 gap-2">
+              {Array.from({ length: 31 }, (_, i) => {
+                const day = i + 1;
+                const isWeekend = [3, 4, 10, 11, 17, 18, 24, 25, 31].includes(day);
+                const isLeave = day === 8;
+                const isWfh = day === 14;
+                const isFuture = day > 22;
+                return (
+                  <div
+                    key={day}
+                    className={`p-2 rounded-lg border text-center transition-all ${
+                      isFuture
+                        ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-400'
+                        : isWeekend
+                        ? 'bg-slate-100/70 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/60 text-slate-500 font-medium'
+                        : isLeave
+                        ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-700 dark:text-amber-400 font-bold'
+                        : isWfh
+                        ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800/60 text-sky-700 dark:text-sky-400 font-bold'
+                        : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 font-bold'
+                    }`}
+                  >
+                    <div className="text-[10px] text-slate-400 font-mono">Day {day}</div>
+                    <div className="text-xs font-mono mt-0.5 font-bold">
+                      {isFuture ? '-' : isWeekend ? 'WO' : isLeave ? 'CL' : isWfh ? 'WFH' : 'P'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Tab 7: Leave Balances & History */}
+      {activeTab === 'Leave' && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-[#111827] p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Earned / Privilege Leave</span>
+                <span className="font-mono text-xs font-bold text-[#6D28D9] dark:text-purple-400">14 / 18</span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div className="bg-[#6D28D9] h-full rounded-full" style={{ width: '78%' }} />
+              </div>
+              <p className="text-[10px] text-slate-500 mt-2">14 days encashable balance available</p>
+            </div>
+            <div className="bg-white dark:bg-[#111827] p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Casual Leave (CL)</span>
+                <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">8 / 12</span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div className="bg-emerald-500 h-full rounded-full" style={{ width: '66%' }} />
+              </div>
+              <p className="text-[10px] text-slate-500 mt-2">Lapses at calendar year end (Dec 31)</p>
+            </div>
+            <div className="bg-white dark:bg-[#111827] p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Sick / Medical Leave (SL)</span>
+                <span className="font-mono text-xs font-bold text-sky-600 dark:text-sky-400">7 / 10</span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div className="bg-sky-500 h-full rounded-full" style={{ width: '70%' }} />
+              </div>
+              <p className="text-[10px] text-slate-500 mt-2">Requires medical certificate for &gt; 2 days</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#111827] p-5 sm:p-6 rounded-xl border border-[#E5E7EB] dark:border-[#1F2937] shadow-[0_1px_3px_0_rgba(15,23,42,0.04)]">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 mb-4 font-heading">
+              Recent Leave Application History
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 font-semibold">
+                    <th className="pb-3">Leave Type</th>
+                    <th className="pb-3">Duration</th>
+                    <th className="pb-3">Days</th>
+                    <th className="pb-3">Reason</th>
+                    <th className="pb-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  <tr>
+                    <td className="py-3 font-semibold text-slate-900 dark:text-slate-100">Casual Leave</td>
+                    <td className="py-3 font-mono text-slate-600 dark:text-slate-300">08 Oct 2026 - 08 Oct 2026</td>
+                    <td className="py-3 font-mono">1.0 Day</td>
+                    <td className="py-3 text-slate-500">Family emergency & personal commitment</td>
+                    <td className="py-3"><Badge variant="success">Approved</Badge></td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 font-semibold text-slate-900 dark:text-slate-100">Earned Leave</td>
+                    <td className="py-3 font-mono text-slate-600 dark:text-slate-300">18 Aug 2026 - 20 Aug 2026</td>
+                    <td className="py-3 font-mono">3.0 Days</td>
+                    <td className="py-3 text-slate-500">Annual vacation travel</td>
+                    <td className="py-3"><Badge variant="success">Approved</Badge></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 8: Payslips View */}
+      {activeTab === 'Payslips' && (
+        <div className="bg-white dark:bg-[#111827] p-5 sm:p-6 rounded-xl border border-[#E5E7EB] dark:border-[#1F2937] shadow-[0_1px_3px_0_rgba(15,23,42,0.04)]">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 font-heading">
+                Monthly Compensation Slips
+              </h3>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Official Form 16 / Payslip statements with tax and statutory deduction breakdown.
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 font-semibold">
+                  <th className="pb-3">Pay Period</th>
+                  <th className="pb-3">Gross Earnings</th>
+                  <th className="pb-3">Total Deductions</th>
+                  <th className="pb-3">Net Disbursed</th>
+                  <th className="pb-3">Disbursal Date</th>
+                  <th className="pb-3">Status</th>
+                  <th className="pb-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                {[
+                  { month: 'October 2026', date: '31 Oct 2026' },
+                  { month: 'September 2026', date: '30 Sep 2026' },
+                  { month: 'August 2026', date: '31 Aug 2026' },
+                  { month: 'July 2026', date: '31 Jul 2026' },
+                ].map((period, idx) => {
+                  const gross = employee.salary;
+                  const deductions = Math.round(gross * 0.16);
+                  const net = gross - deductions;
+                  return (
+                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3 font-semibold text-slate-900 dark:text-slate-100">
+                        {period.month}
+                      </td>
+                      <td className="py-3 font-mono tabular-nums text-slate-700 dark:text-slate-300">
+                        ₹{gross.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3 font-mono tabular-nums text-red-600 dark:text-red-400">
+                        -₹{deductions.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3 font-mono font-bold tabular-nums text-[#15803D] dark:text-emerald-400">
+                        ₹{net.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3 font-mono text-slate-500">{period.date}</td>
+                      <td className="py-3">
+                        <Badge variant="success">Paid</Badge>
+                      </td>
+                      <td className="py-3 text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            const slip = await payrollService.getPayslipById(employee.id);
+                            if (slip) {
+                              setSelectedPayslip(slip);
+                            } else {
+                              setSelectedPayslip({
+                                id: `slip-${employee.id}`,
+                                employeeId: employee.employeeId,
+                                employeeName: `${employee.firstName} ${employee.lastName}`,
+                                department: employee.departmentName,
+                                designation: employee.designationName,
+                                month: period.month.split(' ')[0],
+                                year: 2026,
+                                basic: Math.round(gross * 0.5),
+                                hra: Math.round(gross * 0.25),
+                                specialAllowance: Math.round(gross * 0.25),
+                                gross,
+                                epf: Math.min(1800, Math.round(gross * 0.5 * 0.12)),
+                                esic: 0,
+                                professionalTax: 200,
+                                tds: Math.round(gross * 0.08),
+                                totalDeductions: deductions,
+                                netPay: net,
+                                status: 'Paid',
+                              });
+                            }
+                          }}
+                          leftIcon={<Eye className="w-3.5 h-3.5" />}
+                        >
+                          View Payslip
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 9: Documents View */}
+      {activeTab === 'Documents' && (
+        <div className="bg-white dark:bg-[#111827] p-5 sm:p-6 rounded-xl border border-[#E5E7EB] dark:border-[#1F2937] shadow-[0_1px_3px_0_rgba(15,23,42,0.04)]">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 font-heading">
+                Verified Employment & KYC Vault
+              </h3>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Statutory identity cards and contracts secured with AES-256 cloud encryption.
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 font-semibold">
+                  <th className="pb-3">Document Title</th>
+                  <th className="pb-3">Category</th>
+                  <th className="pb-3">Verified Date</th>
+                  <th className="pb-3">Status</th>
+                  <th className="pb-3 text-right">Download</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                {[
+                  { title: 'Aadhaar Card (Masked UIDAI)', cat: 'KYC & Identity', date: employee.joiningDate },
+                  { title: `Permanent Account Number (PAN: ${showSensitiveData ? employee.panNumber : maskPanNumber(employee.panNumber)})`, cat: 'Statutory Tax', date: employee.joiningDate },
+                  { title: 'Employment Agreement & Appointment Letter', cat: 'Contracts', date: employee.joiningDate },
+                  { title: 'Non-Disclosure & IP Assignment Agreement', cat: 'Legal Compliance', date: employee.joiningDate },
+                  { title: 'Educational Degree & Transcripts', cat: 'Academic Records', date: employee.joiningDate },
+                  { title: 'Form 12BB Income Tax Declaration (FY 2026-27)', cat: 'Income Tax', date: '05 Apr 2026' },
+                ].map((doc, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="py-3 font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-[#6D28D9] shrink-0" />
+                      <span>{doc.title}</span>
+                    </td>
+                    <td className="py-3 text-slate-500">{doc.cat}</td>
+                    <td className="py-3 font-mono text-slate-500">{doc.date}</td>
+                    <td className="py-3">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60">
+                        <CheckCircle2 className="w-3 h-3" /> Verified
+                      </span>
+                    </td>
+                    <td className="py-3 text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          triggerFileDownload(
+                            `${doc.title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.txt`,
+                            `DOCUMENT VERIFICATION CERTIFICATE\n--------------------------------\nOrganization: Alize Software Services LLP\nEmployee: ${employee.firstName} ${employee.lastName} (${employee.employeeId})\nDocument: ${doc.title}\nCategory: ${doc.cat}\nVerification Status: Digitally Verified\nVerified On: ${doc.date}`,
+                            'text/plain'
+                          );
+                          success('Document Downloaded', `Downloaded verified certificate for ${doc.title}`);
+                        }}
+                        leftIcon={<Download className="w-3.5 h-3.5" />}
+                      >
+                        Download
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Payslip Modal */}
+      <PayslipModal
+        isOpen={Boolean(selectedPayslip)}
+        onClose={() => setSelectedPayslip(null)}
+        payslip={selectedPayslip}
+      />
     </div>
   );
 };

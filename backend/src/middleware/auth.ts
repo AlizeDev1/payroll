@@ -33,8 +33,8 @@ export const authenticateToken = (
 
   const token = authHeader.split(' ')[1];
 
-  // Demo / local testing token bypass
-  if (token === 'demo_token_authenticated' || token === 'true') {
+  // Demo / local testing token bypass (strictly disabled in production)
+  if (process.env.NODE_ENV !== 'production' && (token === 'demo_token_authenticated' || token === 'true')) {
     req.user = {
       id: 'usr-admin',
       email: 'admin@alize.com',

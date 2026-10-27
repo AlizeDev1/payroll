@@ -8,6 +8,7 @@ interface ModalProps {
   description?: string;
   children: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | string;
   footer?: React.ReactNode;
 }
 
@@ -17,9 +18,11 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   description,
   children,
-  maxWidth = 'lg',
+  maxWidth,
+  size,
   footer,
 }) => {
+  const effectiveWidth = (maxWidth || size || 'lg') as 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -59,7 +62,7 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Dialog: 12px radius, subtle elevation, crisp border */}
       <div
-        className={`relative w-full ${maxWidthClasses[maxWidth]} bg-white dark:bg-[#111827] border border-[#E5E7EB] dark:border-[#1F2937] rounded-xl modal-elevation z-10 overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh] my-auto animate-in fade-in zoom-in-95 duration-150`}
+        className={`relative w-full ${maxWidthClasses[effectiveWidth] || 'max-w-lg'} bg-white dark:bg-[#111827] border border-[#E5E7EB] dark:border-[#1F2937] rounded-xl modal-elevation z-10 overflow-hidden flex flex-col max-h-[94vh] sm:max-h-[90vh] my-auto animate-in fade-in zoom-in-95 duration-150`}
         role="dialog"
         aria-modal="true"
       >

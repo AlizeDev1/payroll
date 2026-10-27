@@ -15,6 +15,7 @@ import { employeeService } from '../services/employeeService';
 import { PayslipItem, Department } from '../types';
 import { PayslipModal } from '../components/modals/PayslipModal';
 import { useToast } from '../context/ToastContext';
+import { exportToCsv } from '../utils/exportUtils';
 
 export const PayslipsPage: React.FC = () => {
   const { success } = useToast();
@@ -42,9 +43,44 @@ export const PayslipsPage: React.FC = () => {
   }, [selectedMonth, selectedYear, selectedDept]);
 
   const handleDownloadAll = () => {
-    const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1';
-    window.open(`${apiBase}/reports/download/payroll_register_master_${selectedMonth}_${selectedYear}.csv`, '_blank');
-    success('Bulk Payslip Register Exported', `Exported ${payslips.length} employee compensation records (.csv).`);
+    const headers = [
+      'Employee ID',
+      'Employee Name',
+      'Department',
+      'Designation',
+      'Month',
+      'Basic Salary (₹)',
+      'HRA (₹)',
+      'Allowances (₹)',
+      'Gross Pay (₹)',
+      'EPF (₹)',
+      'ESIC (₹)',
+      'Prof Tax (₹)',
+      'TDS (₹)',
+      'Total Deductions (₹)',
+      'Net Take-Home (₹)',
+      'Payment Status',
+    ];
+    const rows = filteredPayslips.map((p) => [
+      p.employeeId,
+      p.employeeName,
+      p.department,
+      p.designation,
+      `${selectedMonth} ${selectedYear}`,
+      p.basic,
+      p.hra,
+      p.specialAllowance,
+      p.gross,
+      p.epf,
+      p.esic,
+      p.professionalTax,
+      p.tds,
+      p.totalDeductions,
+      p.netPay,
+      p.status,
+    ]);
+    exportToCsv(`payroll_register_master_${selectedMonth}_${selectedYear}.csv`, headers, rows);
+    success('Bulk Payslip Register Exported', `Exported ${filteredPayslips.length} employee compensation records (.csv).`);
   };
 
   const handleEmailAll = () => {

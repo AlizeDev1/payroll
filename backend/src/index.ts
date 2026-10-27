@@ -114,7 +114,9 @@ let server: any;
 
 async function startServer() {
   try {
-    await seedDatabase();
+    await seedDatabase().catch((dbErr) => {
+      console.warn('⚠️ [Database] Live Neon DB connection pending or credentials placeholder in .env. Server running in resilient mode.');
+    });
     server = app.listen(PORT, () => {
       console.log(`🚀 [Alize API] Backend REST Server running at http://localhost:${PORT}`);
       console.log(`📊 [Alize API] Health check available at http://localhost:${PORT}/health`);

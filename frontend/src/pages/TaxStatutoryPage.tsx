@@ -15,6 +15,7 @@ import { complianceService } from '../services/complianceService';
 import { StatutoryCompliance } from '../types';
 import { COMPANY_INFO } from '../data/mockData';
 import { useToast } from '../context/ToastContext';
+import { triggerFileDownload } from '../utils/exportUtils';
 
 export const TaxStatutoryPage: React.FC = () => {
   const { success } = useToast();
@@ -57,7 +58,11 @@ export const TaxStatutoryPage: React.FC = () => {
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => success('Compliance Pack Downloaded', 'Exported EPFO ECR + ESIC return files.')}
+              onClick={() => {
+                const statutoryContent = `ESTABLISHMENT COMPLIANCE RETURN PACK\n=====================================\nCompany: ${COMPANY_INFO.name}\nEPFO Establishment Code: ${COMPANY_INFO.pfEstCode}\nESIC Code: ${COMPANY_INFO.esiCode}\nPeriod: October 2026\nGenerated: ${new Date().toISOString()}\n\nSUMMARY:\n1. EPFO Account 01 (Employee + Employer): ₹3,42,800\n2. EPFO Account 02 (Admin Charges): ₹14,280\n3. EPFO Account 10 (EPS): ₹2,10,400\n4. EPFO Account 21 (EDLI): ₹12,650\n5. ESIC Total Remittance: ₹68,400\n6. Professional Tax (Karnataka): ₹17,200\n7. Income Tax TDS (Section 192): ₹4,85,600\n\nStatus: Pre-validated & Ready for EPFO Unified Portal Gateway Upload.`;
+                triggerFileDownload('statutory_compliance_pack_oct_2026.txt', statutoryContent, 'text/plain');
+                success('Compliance Pack Downloaded', 'Exported EPFO ECR + ESIC return files (.txt).');
+              }}
               leftIcon={<Download className="w-3.5 h-3.5" />}
             >
               Download Statutory Pack

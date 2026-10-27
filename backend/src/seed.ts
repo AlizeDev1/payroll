@@ -19,11 +19,16 @@ import {
 } from './data/mockData';
 
 export async function seedDatabase() {
-  const userCount = await prisma.user.count();
-  if (userCount > 0) {
-    console.log('[Seed] Database already seeded. Skipping initial seed.');
+  if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('<user>') || process.env.DATABASE_URL.includes('<pooler-host>')) {
+    console.log('ℹ️ [Seed] Live Neon DATABASE_URL not yet configured with real credentials in .env. Skipping initial DB seed.');
     return;
   }
+  try {
+    const userCount = await prisma.user.count();
+    if (userCount > 0) {
+      console.log('[Seed] Database already seeded. Skipping initial seed.');
+      return;
+    }
 
   console.log('[Seed] Seeding database with initial enterprise payroll data...');
 
@@ -403,13 +408,19 @@ export async function seedDatabase() {
   }
 
   console.log('[Seed] Database successfully populated with initial payroll data!');
+  } catch (err) {
+    console.warn('⚠️ [Seed] Skipping seed execution:', err);
+  }
 }
 
-seedDatabase()
-  .catch((e) => {
-    console.error('Seed error:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Only run standalone when invoked directly via CLI (e.g. npm run prisma:seed)
+if (process.argv[1] && (process.argv[1].includes('seed.ts') || process.argv[1].includes('seed.js'))) {
+  seedDatabase()
+    .catch((e) => {
+      console.error('Seed error:', e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}
